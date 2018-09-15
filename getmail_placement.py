@@ -6,10 +6,12 @@ import smtplib
 import json
 import time
 import sys
+# import socks
+import socket
 
 class TnP_Notifier:
     
-    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file):
+    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file, proxy_url=None, proxy_port=None):
         self.outgoing_server = outgoing_server
         self.outgoing_port = outgoing_port
         self.sender_email = sender_email
@@ -23,10 +25,11 @@ class TnP_Notifier:
                         "visit": ["name", "time", "venue", "info"],
                         "shortlist": ["link", "name", "info"],
                         "file": ["link", "name", "info"]}
-    
-    
+        self.proxy_url = proxy_url
+        self.proxy_port = proxy_port
+        self._socket = socket.socket
+
     def find_json_object(self, data, it):
-    
         for item in data:
             if(item["category"] == it["category"]):
                 flag = True
@@ -41,15 +44,15 @@ class TnP_Notifier:
     def json_diff(self, data1, data2):
         diff = []
         for item in data1:
-            if(item["category"] == "file"):
-                flag = self.find_json_object(data2, item)
-                if not flag:
-                    diff.append(item)
+            flag = self.find_json_object(data2, item)
+            if not flag:
+                diff.append(item)
+            
         return diff
         
     def check_new_notifications(self, old_file):
         response = requests.get(self.notifications_url, headers=self.headers, verify=False)
-        data = json.loads(response.content)
+        data = response.json()
         
         try:
             fin = open(old_file, 'r')
@@ -142,23 +145,40 @@ class TnP_Notifier:
         str_data =  json.dumps(data, indent=4)
         open(file_name ,'w').write(str_data)
     
-    def send_email(self, to_addrs, email_body, subject):
+    def send_email(self, to_addrs, email_body, subject, bcc=None):
         
         print("Sending new notifications...")
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = self.sender_email
-        msg['To'] = ','.join(to_addrs)
-        
+        # msg['To'] = ','.join(to_addrs)
+        msg['To'] = 'whomsoever-it-may-concern'
+        # if(bcc):
+            # to_addrs += bcc
+
         msg.attach(MIMEText(email_body, 'html'))
-        
+
+        if(self.proxy_url and self.proxy_port):
+            socks.setdefaultproxy(socks.HTTP, proxy_url, proxy_port)
+            socks.wrapmodule(smtplib)
+
         server = smtplib.SMTP(self.outgoing_server, self.outgoing_port)
         server.ehlo()
         server.starttls()
         server.login(self.sender_email, self.sender_password)
-        server.sendmail(self.sender_email, ','.join(to_addrs), msg.as_string())
+        if(bcc):
+            server.sendmail(self.sender_email, bcc, msg.as_string())
+
+        #send mail to owner
+        if(bcc):
+            msg['To'] = ','.join(bcc)
+        server.sendmail(self.sender_email, to_addrs, msg.as_string())
+
         server.quit()
         print("Email sent successfully! Hurray!\n\n")
+
+        if(self.proxy_url and self.proxy_port):
+            socket.socket = self._socket
     
     def run(self):
         
@@ -166,7 +186,7 @@ class TnP_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email(self.recipient_email_list, message, "T&P Placement Notification")
+            self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
             self.dump_json(data, self.notifications_history_file)
             
         else:
@@ -176,14 +196,19 @@ if __name__=='__main__':
 
     outgoing_server = "smtp.googlemail.com"
     outgoing_port = 587
-    sender_email = "tnpnotifier@gmail.com"
-    sender_password = "tnpnotify.exe"
-    recipient_email_list  = ['masterkapilkumar@gmail.com']
-    check_interval = 300    #in seconds
+    sender_email = "abc@gmail.com"
+    sender_password = "123"
+    recipient_email_list  = ['masterkapilkumar@gmail']
+    
+    check_interval = int(sys.argv[1])    #in seconds
     notifications_url = "https://tnp.iitd.ac.in/api/notify?type=placement"
     notifications_history_file = "notifications_history.json"
+    proxy_url = None
+    proxy_port = None
+    # proxy_url = "act4d.iitd.ac.in"
+    # proxy_port = 3128
     
-    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file)
+    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file, proxy_url, proxy_port)
     time_since_last_sent_error = 0
     while(True):
         try:
