@@ -1,5 +1,8 @@
 # IITD-TnP-Notifier
-Sends real time email notifications for notifications on new TnP Portal.
+Sends real time email notifications for TnP notifications.
+getmail_placement.py - Placement notifications for new TnP Portal.
+old_portal/getmail_training.py - Training notifications for old TnP Portal.
+old_portal/companies_sync.py - Companies on campus on old TnP Portal.
 
 ## How to run
     python getmail_placement.py timeout_interval
