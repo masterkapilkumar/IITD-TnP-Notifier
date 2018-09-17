@@ -71,10 +71,10 @@ class TnP_Company_Notifier:
             for attr in self.contents["companies"]:
                 if attr not in item and attr not in it:
                     continue
-                elif attr not in item or attr not in it:
+                elif (attr not in item or attr not in it) and attr!="ppt_applied":
                     flag = False
                     break
-                elif(item[attr] != it[attr]):
+                elif(item[attr] != it[attr]) and attr!="ppt_applied":
                     flag = False
                     break
             if(flag):
@@ -136,11 +136,11 @@ class TnP_Company_Notifier:
             companies += item_body.format(item['profile'])
             companies += item_body.format(self.type_mapping.get(item['type'], "Type not registered in TnpNotifier"))
             if('application_deadline' in item and 'ppt_date' in item):
-                companies += item_body.format("Apply: " + self.get_pretty_date(item['application_deadline'], dateformat) + "<br>" + "PPT: " + self.get_pretty_date(item['ppt_date'], dateformat))
+                companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat) + "<br>" + "PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
             elif('application_deadline' in item):
-                companies += item_body.format("Apply: " + self.get_pretty_date(item['application_deadline'], dateformat))
+                companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat)+ "</font>")
             elif('ppt_date' in item):
-                companies += item_body.format("PPT: " + self.get_pretty_date(item['ppt_date'], dateformat))
+                companies += item_body.format('<font color="red">'+"PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
             else:
                 companies += item_body.format('---')
                 
@@ -179,11 +179,11 @@ class TnP_Company_Notifier:
         server.ehlo()
         server.starttls()
         server.login(self.sender_email, self.sender_password)
-        if(bcc):
+        if(bcc and len(bcc)>0):
             server.sendmail(self.sender_email, bcc, msg.as_string())
 
         #send mail to owner
-        if(bcc):
+        if(bcc and len(bcc)>0):
             msg['To'] = ','.join(bcc)
         server.sendmail(self.sender_email, to_addrs, msg.as_string())
 
@@ -295,7 +295,7 @@ class TnP_Company_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
+            self.send_email(["masterkapilkumar@gmail.com"], message, "Companies On Campus Placement Notification", bcc=self.recipient_email_list)
             self.dump_json(data, self.company_history_file)
             
         else:
@@ -307,13 +307,12 @@ if __name__=='__main__':
     outgoing_port = 587
     sender_email = "abc@gmail.com"
     sender_password = "123"
-    recipient_email_list  = ['masterkapilkumar@gmail.com']
-    # recipient_email_list  = []
+    recipient_email_list  = []
     check_interval = int(sys.argv[1])    #in seconds
     captcha_url = "https://tnp.iitd.ac.in/api/captcha"
     login_url = "https://tnp.iitd.ac.in/api/student/login"
-    tnp_username = "2014CS50736"
-    tnp_password = "5697f7c4ded4de190c05018e3ed70902"
+    tnp_username = "abc"
+    tnp_password = "123"
     companies_url = "https://tnp.iitd.ac.in/api/student/all-companies"
     company_history_file = "company_history.json"
     proxy_url = None
