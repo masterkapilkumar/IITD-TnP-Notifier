@@ -6,6 +6,8 @@ from cairosvg import svg2png
 from datetime import datetime
 import numpy as np
 
+import traceback
+import argparse
 import requests
 import smtplib
 import json
@@ -303,22 +305,40 @@ class TnP_Company_Notifier:
 
 if __name__=='__main__':
 
-    outgoing_server = "smtp.googlemail.com"
-    outgoing_port = 587
-    sender_email = "abc@gmail.com"
-    sender_password = "123"
-    recipient_email_list  = ['abc@gmail.com']
-    check_interval = int(sys.argv[1])    #in seconds
-    captcha_url = "https://tnp.iitd.ac.in/api/captcha"
-    login_url = "https://tnp.iitd.ac.in/api/student/login"
-    tnp_username = "abc"
-    tnp_password = "123"
-    companies_url = "https://tnp.iitd.ac.in/api/student/all-companies"
-    company_history_file = "company_history.json"
-    proxy_url = None
-    proxy_port = None
-    # proxy_url = "act4d.iitd.ac.in"
-    # proxy_port = 3128
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", help="path of JSON file having configuration data")
+    parser.add_argument('-t', '--time', help="Time (in seconds) gap for checking new notifications", default="1000", type=int)
+    
+    args = parser.parse_args()
+    
+    try:
+        fin = open(args.config_file, 'r')
+        config_data = json.loads(fin.read().strip())
+        fin.close()
+    except:
+        print("Error reading configuration data:\n")
+        traceback.print_exc()
+        sys.exit(1)
+    
+    try:
+        outgoing_server = config_data["outgoing_server"]
+        outgoing_port = config_data["outgoing_port"]
+        sender_email = config_data["sender_email"]
+        sender_password = config_data["sender_password"]
+        recipient_email_list = list(map(lambda s: s.strip(), config_data["recipient_email_list"].split(",")))
+        captcha_url = config_data["captcha_url"]
+        login_url = config_data["login_url"]
+        tnp_username = config_data["tnp_username"]
+        tnp_password = config_data["tnp_password"]
+        companies_url = config_data["companies_url"]
+        company_history_file = config_data["company_history_file"]
+        proxy_url = config_data.get("proxy_url", None)
+        proxy_port = config_data.get("proxy_port", None)
+        check_interval = args.time
+    except KeyError:
+        print("Missing configuration data:\n")
+        traceback.print_exc()
+        sys.exit(1)
     
     tnp_notifier = TnP_Company_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, company_history_file, proxy_url, proxy_port, tnp_username, tnp_password)
     time_since_last_sent_error = 0
@@ -330,7 +350,7 @@ if __name__=='__main__':
             sys.exit(1)
         except:
             #handle any exception
-            import traceback
+            
             traceback.print_exc()
             print("Error: " + str(sys.exc_info()))
             print("\n")
