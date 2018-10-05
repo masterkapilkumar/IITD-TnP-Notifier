@@ -13,8 +13,8 @@ import smtplib
 import json
 import time
 import sys
-# import socks
-# import socket
+import socks
+import socket
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -331,7 +331,7 @@ if __name__=='__main__':
         tnp_username = config_data["tnp_username"]
         tnp_password = config_data["tnp_password"]
         companies_url = config_data["companies_url"]
-        company_history_file = config_data["company_history_file"]
+        history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)
         check_interval = args.time
@@ -340,7 +340,7 @@ if __name__=='__main__':
         traceback.print_exc()
         sys.exit(1)
     
-    tnp_notifier = TnP_Company_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, company_history_file, proxy_url, proxy_port, tnp_username, tnp_password)
+    tnp_notifier = TnP_Company_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, history_file, proxy_url, proxy_port, tnp_username, tnp_password)
     time_since_last_sent_error = 0
     while(True):
         try:
@@ -352,7 +352,6 @@ if __name__=='__main__':
             #handle any exception
             
             traceback.print_exc()
-            print("Error: " + str(sys.exc_info()))
             print("\n")
             #Send email to owner in case of any error in interval of 6 hours
             if(time_since_last_sent_error > 21600):

@@ -1,6 +1,8 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import traceback
+import argparse
 import requests
 import smtplib
 import json
@@ -194,21 +196,38 @@ class TnP_Notifier:
 
 if __name__=='__main__':
 
-    outgoing_server = "smtp.googlemail.com"
-    outgoing_port = 587
-    sender_email = "abc@gmail.com"
-    sender_password = "123"
-    recipient_email_list  = ['masterkapilkumar@gmail']
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", help="path of JSON file having configuration data")
+    parser.add_argument('-t', '--time', help="Time (in seconds) gap for checking new notifications", default="1000", type=int)
     
-    check_interval = int(sys.argv[1])    #in seconds
-    notifications_url = "https://tnp.iitd.ac.in/api/notify?type=placement"
-    notifications_history_file = "notifications_history.json"
-    proxy_url = None
-    proxy_port = None
-    # proxy_url = "act4d.iitd.ac.in"
-    # proxy_port = 3128
+    args = parser.parse_args()
     
-    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file, proxy_url, proxy_port)
+    try:
+        fin = open(args.config_file, 'r')
+        config_data = json.loads(fin.read().strip())
+        fin.close()
+    except:
+        print("Error reading configuration data:\n")
+        traceback.print_exc()
+        sys.exit(1)
+    
+    try:
+        outgoing_server = config_data["outgoing_server"]
+        outgoing_port = config_data["outgoing_port"]
+        sender_email = config_data["sender_email"]
+        sender_password = config_data["sender_password"]
+        recipient_email_list = list(map(lambda s: s.strip(), config_data["recipient_email_list"].split(",")))
+        notifications_url = config_data["notifications_url"]
+        history_file = config_data["history_file"]
+        proxy_url = config_data.get("proxy_url", None)
+        proxy_port = config_data.get("proxy_port", None)
+        check_interval = args.time
+    except KeyError:
+        print("Missing configuration data:\n")
+        traceback.print_exc()
+        sys.exit(1)
+    
+    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, history_file, proxy_url, proxy_port)
     time_since_last_sent_error = 0
     while(True):
         try:
@@ -218,14 +237,15 @@ if __name__=='__main__':
             sys.exit(1)
         except:
             #handle any exception
-            print("Error: " + str(sys.exc_info()))
+            
+            traceback.print_exc()
             print("\n")
             #Send email to owner in case of any error in interval of 6 hours
             if(time_since_last_sent_error > 21600):
                 time_since_last_sent_error = 0
             if(time_since_last_sent_error == 0):
                 print("Informing Kapil...")
-                error_msg = "<b>TnpNotifier encountered an error, please correct it ASAP:</b><br><br>"
+                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br>"
                 error_msg += "<i>"+str(sys.exc_info())+"</i>"
                 tnp_notifier.send_email(["masterkapilkumar@gmail.com"], error_msg, "TnP Notifier is down...")
                 print("Email sent to Kapil...")

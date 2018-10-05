@@ -26,12 +26,13 @@ The configuration file should have the following data:
  - **sender_email**: Sender email address
  - **sender_password**: password of sender email id
  - **recipient_email_list**: comma separated list of recipent users.
+ - **notifications_url**: "https://tnp.iitd.ac.in/api/notify?type=placement"
  - **captcha_url**: "https://tnp.iitd.ac.in/api/captcha"
  - **login_url**: "https://tnp.iitd.ac.in/api/student/login"
  - **tnp_username**: Tnp portal username
  - **tnp_password**: md5 hash of the TnP password
  - **companies_url**: "https://tnp.iitd.ac.in/api/student/all-companies"
- - **company_history_file**: File name for storing history
+ - **history_file**: File name for storing history
  - **proxy_url**: Proxy url (empty string in case of no proxy)
  - **proxy_port**: Proxy port (empty string in case of no proxy)
 
