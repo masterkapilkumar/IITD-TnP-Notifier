@@ -69,12 +69,12 @@ class TnP_Company_Notifier:
         for item in data:
             flag = True
             for attr in self.contents["companies"]:
-                if attr not in item and attr not in it:
+                if (attr not in item and attr not in it) or attr=="ppt_applied":
                     continue
-                elif (attr not in item or attr not in it) and attr!="ppt_applied":
+                elif ((attr not in item) or (attr not in it)):
                     flag = False
                     break
-                elif(item[attr] != it[attr]) and attr!="ppt_applied":
+                elif(item[attr] != it[attr]):
                     flag = False
                     break
             if(flag):
@@ -132,7 +132,7 @@ class TnP_Company_Notifier:
         for item in data:
             
             companies += '<tr>'
-            companies += item_body.format(item['name'])
+            companies += item_body.format('<a href="https://tnp.iitd.ac.in/portal/view-jnf?code='+item['profile_code']+'">'+item['name']+'</a>')
             companies += item_body.format(item['profile'])
             companies += item_body.format(self.type_mapping.get(item['type'], "Type not registered in TnpNotifier"))
             if('application_deadline' in item and 'ppt_date' in item):
@@ -179,11 +179,11 @@ class TnP_Company_Notifier:
         server.ehlo()
         server.starttls()
         server.login(self.sender_email, self.sender_password)
-        if(bcc and len(bcc)>0):
+        if(bcc!=None and len(bcc)>0):
             server.sendmail(self.sender_email, bcc, msg.as_string())
 
         #send mail to owner
-        if(bcc and len(bcc)>0):
+        if(bcc!=None and len(bcc)>0):
             msg['To'] = ','.join(bcc)
         server.sendmail(self.sender_email, to_addrs, msg.as_string())
 
@@ -307,7 +307,7 @@ if __name__=='__main__':
     outgoing_port = 587
     sender_email = "abc@gmail.com"
     sender_password = "123"
-    recipient_email_list  = []
+    recipient_email_list  = ['abc@gmail.com']
     check_interval = int(sys.argv[1])    #in seconds
     captcha_url = "https://tnp.iitd.ac.in/api/captcha"
     login_url = "https://tnp.iitd.ac.in/api/student/login"
@@ -339,7 +339,7 @@ if __name__=='__main__':
                 time_since_last_sent_error = 0
             if(time_since_last_sent_error == 0):
                 print("Informing Kapil...")
-                error_msg = "<b>TnpNotifier encountered an error, please correct it ASAP:</b><br><br>"
+                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br>"
                 error_msg += "<i>"+str(sys.exc_info())+"</i>"
                 tnp_notifier.send_email(["masterkapilkumar@gmail.com"], error_msg, "TnP Notifier is down...")
                 print("Email sent to Kapil...")
