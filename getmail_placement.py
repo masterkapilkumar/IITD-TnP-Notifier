@@ -216,8 +216,9 @@ if __name__=='__main__':
         outgoing_port = config_data["outgoing_port"]
         sender_email = config_data["sender_email"]
         sender_password = config_data["sender_password"]
-        recipient_email_list = list(map(lambda s: s.strip(), config_data["recipient_email_list"].split(",")))
-        notifications_url = config_data["notifications_url"]
+        recipient_email_list = config_data["recipient_email_list"]
+        recipient_email_list = list(map(lambda s: s.strip(), recipient_email_list.split(",")))
+        notifications_url = "https://tnp.iitd.ac.in/api/notify?type=placement"
         history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)

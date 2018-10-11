@@ -7,6 +7,7 @@ from datetime import datetime
 import numpy as np
 
 import traceback
+import hashlib
 import argparse
 import requests
 import smtplib
@@ -325,12 +326,14 @@ if __name__=='__main__':
         outgoing_port = config_data["outgoing_port"]
         sender_email = config_data["sender_email"]
         sender_password = config_data["sender_password"]
-        recipient_email_list = list(map(lambda s: s.strip(), config_data["recipient_email_list"].split(",")))
-        captcha_url = config_data["captcha_url"]
-        login_url = config_data["login_url"]
+        recipient_email_list = config_data["recipient_email_list"]
+        recipient_email_list = list(map(lambda s: s.strip(), recipient_email_list.split(",")))
+        captcha_url = "https://tnp.iitd.ac.in/api/captcha"
+        login_url = "https://tnp.iitd.ac.in/api/student/login"
         tnp_username = config_data["tnp_username"]
         tnp_password = config_data["tnp_password"]
-        companies_url = config_data["companies_url"]
+        tnp_password = hashlib.md5(tnp_password.encode()).hexdigest()
+        companies_url = "https://tnp.iitd.ac.in/api/student/all-companies"
         history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)
