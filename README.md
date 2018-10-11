@@ -18,20 +18,16 @@ Sends real time email notifications for TnP notices.
 
     optional arguments:
         -h, --help            show this help message and exit
-        -t TIME, --time TIME  Time (in seconds) gap for checking new notifications
+        -t TIME, --time TIME  Time (in seconds) gap between checking new notifications
     
-The configuration file should have the following data:
+The JSON configuration file should have the following data:
  - **outgoing_server**: Name of the outgoing server for sending emails
  - **outgoing_port**: Port of the outgoing server
  - **sender_email**: Sender email address
  - **sender_password**: password of sender email id
  - **recipient_email_list**: comma separated list of recipent users.
- - **notifications_url**: "https://tnp.iitd.ac.in/api/notify?type=placement"
- - **captcha_url**: "https://tnp.iitd.ac.in/api/captcha"
- - **login_url**: "https://tnp.iitd.ac.in/api/student/login"
  - **tnp_username**: Tnp portal username
- - **tnp_password**: md5 hash of the TnP password
- - **companies_url**: "https://tnp.iitd.ac.in/api/student/all-companies"
+ - **tnp_password**: TnP portal password
  - **history_file**: File name for storing history
  - **proxy_url**: Proxy url (empty string in case of no proxy)
  - **proxy_port**: Proxy port (empty string in case of no proxy)
@@ -41,6 +37,6 @@ The configuration file should have the following data:
 - Python libraries
     * requests
     * smtplib
-    * socket, socks
+    * PySocks
     * BeautifulSoup
     * cairosvg
