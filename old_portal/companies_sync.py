@@ -14,6 +14,7 @@ import requests
 import smtplib
 import time
 
+
 while True:
     
     old_data = ""

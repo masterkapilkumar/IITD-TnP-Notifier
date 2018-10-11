@@ -13,6 +13,7 @@ import smtplib
 import time
 import sys
 
+
 while True:
     url = "http://tnp.iitd.ac.in/notices/training/notify.php"
 
