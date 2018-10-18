@@ -188,7 +188,7 @@ class TnP_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            #self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
+            self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
             self.dump_json(data, self.notifications_history_file)
             
         else:
