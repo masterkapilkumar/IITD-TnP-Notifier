@@ -104,26 +104,26 @@ class TnP_Notifier:
         for item in data:
             if(item['category'] == "general"):
                 general += '<tr>'
-                general += item_body.format(item['info'])
+                general += item_body.format(item['info'].replace("\\n", '<br />'))
                 general += '</tr>'
             elif(item['category'] == "visit"):
                 visit += '<tr>'
                 visit += item_body.format(item['name'])
                 visit += item_body.format(item['time'])
                 visit += item_body.format(item['venue'])
-                visit += item_body.format(item['info'])
+                visit += item_body.format(item['info'].replace("\\n", '<br />'))
                 visit += '</tr>'
             elif(item['category'] == "shortlist"):
                 shortlist += '<tr>'
                 shortlist += item_body.format(item['link'])
                 shortlist += item_body.format(item['name'])
-                shortlist += item_body.format(item['info'])
+                shortlist += item_body.format(item['info'].replace("\\n", '<br />'))
                 shortlist += '</tr>'
             elif(item['category'] == "file"):
                 file += '<tr>'
                 file += item_body.format(item['link'])
                 file += item_body.format(item['name'])
-                file += item_body.format(item['info'])
+                file += item_body.format(item['info'].replace("\\n", '<br />'))
                 file += '</tr>'
         
         general += '</table><br/><br/><br/><br/><br/></div>'
