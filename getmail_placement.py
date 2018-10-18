@@ -104,26 +104,26 @@ class TnP_Notifier:
         for item in data:
             if(item['category'] == "general"):
                 general += '<tr>'
-                general += item_body.format(item['info'].replace("\\n", '<br />'))
+                general += item_body.format('<br />'.join(item['info'].split('\n')))
                 general += '</tr>'
             elif(item['category'] == "visit"):
                 visit += '<tr>'
                 visit += item_body.format(item['name'])
                 visit += item_body.format(item['time'])
                 visit += item_body.format(item['venue'])
-                visit += item_body.format(item['info'].replace("\\n", '<br />'))
+                visit += item_body.format('<br />'.join(item['info'].split('\n')))
                 visit += '</tr>'
             elif(item['category'] == "shortlist"):
                 shortlist += '<tr>'
                 shortlist += item_body.format(item['link'])
                 shortlist += item_body.format(item['name'])
-                shortlist += item_body.format(item['info'].replace("\\n", '<br />'))
+                shortlist += item_body.format('<br />'.join(item['info'].split('\n')))
                 shortlist += '</tr>'
             elif(item['category'] == "file"):
                 file += '<tr>'
                 file += item_body.format(item['link'])
                 file += item_body.format(item['name'])
-                file += item_body.format(item['info'].replace("\\n", '<br />'))
+                file += item_body.format('<br />'.join(item['info'].split('\n')))
                 file += '</tr>'
         
         general += '</table><br/><br/><br/><br/><br/></div>'
@@ -188,7 +188,7 @@ class TnP_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
+            #self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
             self.dump_json(data, self.notifications_history_file)
             
         else:
