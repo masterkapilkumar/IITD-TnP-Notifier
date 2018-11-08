@@ -1,7 +1,7 @@
 # IITD-TnP-Notifier
 Sends real time email notifications for TnP notices.
 
-***getmail_placement.py*** - General placement notifications for new TnP Portal.
+***getmail_general_notifications.py*** - General placement/training notifications for new TnP Portal.
 
 ***companies_on_campus/get_company_details.py*** - Notifications for Companies on campus on new TnP Portal.
 
@@ -11,7 +11,7 @@ Sends real time email notifications for TnP notices.
 
 
 ## How to use
-    usage: getmail_placement.py [-h] [-t TIME] [-T {placement,training}] config_file
+    usage: getmail_general_notifications.py [-h] [-t TIME] [-T {placement,training}] config_file
 
     positional arguments:
         config_file           path of JSON file having configuration data
