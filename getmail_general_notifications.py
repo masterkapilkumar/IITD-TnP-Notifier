@@ -13,12 +13,14 @@ import socket
 
 class TnP_Notifier:
     
-    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file, proxy_url=None, proxy_port=None):
+    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, notifications_history_file, proxy_url=None, proxy_port=None, owner_name="Kapil", owner_email="masterkapilkumar@gmail.com", notifications_type="Placement"):
         self.outgoing_server = outgoing_server
         self.outgoing_port = outgoing_port
         self.sender_email = sender_email
         self.sender_password = sender_password
         self.recipient_email_list  = recipient_email_list
+        if(recipient_email_list==['']):
+            self.recipient_email_list  = None
         self.check_interval = check_interval
         self.notifications_url = notifications_url
         self.notifications_history_file = notifications_history_file
@@ -29,6 +31,9 @@ class TnP_Notifier:
                         "file": ["link", "name", "info"]}
         self.proxy_url = proxy_url
         self.proxy_port = proxy_port
+        self.owner_name = owner_name
+        self.owner_email = owner_email
+        self.notifications_type = notifications_type.capitalize()
         self._socket = socket.socket
 
     def find_json_object(self, data, it):
@@ -71,7 +76,7 @@ class TnP_Notifier:
         else:
             return (data, diff)
         
-    #TODO
+    
     def build_email_body(self, data):
         body = '<center><table width="770"><tr><td><br>'
         general = ""
@@ -147,16 +152,13 @@ class TnP_Notifier:
         str_data =  json.dumps(data, indent=4)
         open(file_name ,'w').write(str_data)
     
-    def send_email(self, to_addrs, email_body, subject, bcc=None):
+    def send_email(self, to_addrs, email_body, subject="", bcc=None):
         
         print("Sending new notifications...")
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = self.sender_email
-        # msg['To'] = ','.join(to_addrs)
         msg['To'] = 'whomsoever-it-may-concern'
-        # if(bcc):
-            # to_addrs += bcc
 
         msg.attach(MIMEText(email_body, 'html'))
 
@@ -188,7 +190,7 @@ class TnP_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email(["masterkapilkumar@gmail.com"], message, "T&P Placement Notification", bcc=self.recipient_email_list)
+            self.send_email([self.owner_email], message, "T&P %s Notification" %(self.notifications_type), bcc=self.recipient_email_list)
             self.dump_json(data, self.notifications_history_file)
             
         else:
@@ -199,8 +201,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("config_file", help="path of JSON file having configuration data")
     parser.add_argument('-t', '--time', help="Time (in seconds) gap for checking new notifications", default="1000", type=int)
+    parser.add_argument('-T', '--type', help="Notifications type - Training/Placement", choices=["placement", "training"], default="placement")
     
     args = parser.parse_args()
+    
+    notifications_type = args.type.lower()
     
     try:
         fin = open(args.config_file, 'r')
@@ -218,38 +223,39 @@ if __name__=='__main__':
         sender_password = config_data["sender_password"]
         recipient_email_list = config_data["recipient_email_list"]
         recipient_email_list = list(map(lambda s: s.strip(), recipient_email_list.split(",")))
-        notifications_url = "https://tnp.iitd.ac.in/api/notify?type=placement"
+        notifications_url = "https://tnp.iitd.ac.in/api/notify?type="+notifications_type
+        print(notifications_url)
         history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)
+        owner_name = config_data.get("owner_name", "Kapil")
+        owner_email = config_data.get("owner_email", "masterkapilkumar@gmail.com")
         check_interval = args.time
     except KeyError:
         print("Missing configuration data:\n")
         traceback.print_exc()
         sys.exit(1)
     
-    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, history_file, proxy_url, proxy_port)
+    tnp_notifier = TnP_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, notifications_url, history_file, proxy_url, proxy_port, owner_name, owner_email, notifications_type)
     time_since_last_sent_error = 0
     while(True):
         try:
             tnp_notifier.run()
             time_since_last_sent_error = 0
-        except KeyboardInterrupt:
-            sys.exit(1)
-        except:
+        except Exception:
+        
             #handle any exception
-            
             traceback.print_exc()
             print("\n")
-            #Send email to owner in case of any error in interval of 6 hours
-            if(time_since_last_sent_error > 21600):
+            
+            #Send email to owner in case of any error in interval of 3 hours
+            if(time_since_last_sent_error > 10800):
                 time_since_last_sent_error = 0
             if(time_since_last_sent_error == 0):
-                print("Informing Kapil...")
-                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br>"
-                error_msg += "<i>"+str(sys.exc_info())+"</i>"
-                tnp_notifier.send_email(["masterkapilkumar@gmail.com"], error_msg, "TnP Notifier is down...")
-                print("Email sent to Kapil...")
+                print("Informing %s..." %(owner_name))
+                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br><i>%s</i>" %(str(sys.exc_info()))
+                tnp_notifier.send_email([owner_email], error_msg, subject="TnP Notifier is down...")
+                print("Email sent to %s..." %owner_name)
             time_since_last_sent_error += check_interval
         print("Pausing execution for %s seconds\n" %check_interval)
         time.sleep(check_interval)

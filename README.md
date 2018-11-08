@@ -11,14 +11,15 @@ Sends real time email notifications for TnP notices.
 
 
 ## How to use
-    python get_company_details.py [-h] [-t TIME] config_file
-    
+    usage: getmail_placement.py [-h] [-t TIME] [-T {placement,training}] config_file
+
     positional arguments:
         config_file           path of JSON file having configuration data
 
     optional arguments:
         -h, --help            show this help message and exit
-        -t TIME, --time TIME  Time (in seconds) gap between checking new notifications
+        -t TIME, --time TIME  Time (in seconds) gap for checking new notifications
+        -T {placement,training}, --type {placement,training} Notifications type - Training/Placement
     
 The JSON configuration file should have the following data:
  - **outgoing_server**: Name of the outgoing server for sending emails
@@ -29,8 +30,10 @@ The JSON configuration file should have the following data:
  - **tnp_username**: Tnp portal username
  - **tnp_password**: TnP portal password
  - **history_file**: File name for storing history
- - **proxy_url**: Proxy url (empty string in case of no proxy)
- - **proxy_port**: Proxy port (empty string in case of no proxy)
+ - **owner_name**: Name of the owner (not-required)
+ - **owner_email**: Email of the owner, to send faliure emails (not-required)
+ - **proxy_url**: Proxy url (not-required)
+ - **proxy_port**: Proxy port (not-required)
 
 ### Dependencies
 - Python 3.x
