@@ -40,7 +40,7 @@ class User:
 
 class TnP_Company_Notifier:
     
-    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, company_history_file, proxy_url=None, proxy_port=None, tnp_username='abc', tnp_password='123'):
+    def __init__(self, outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, company_history_file, proxy_url=None, proxy_port=None, tnp_username='abc', tnp_password='123', owner_name="Kapil", owner_email="masterkapilkumar@gmail.com"):
         self.outgoing_server = outgoing_server
         self.outgoing_port = outgoing_port
         self.sender_email = sender_email
@@ -58,7 +58,9 @@ class TnP_Company_Notifier:
         self.type_mapping = {"tech": "Core (Technical)", "finance": "Finance", "research":"Teaching & Research", "other":"Other", "it": "Information Technology", "consult":"Consulting", "analytics":"Analytics"}
         self.proxy_url = proxy_url
         self.proxy_port = proxy_port
-        # self._socket = socket.socket
+        self.owner_name = owner_name
+        self.owner_email = owner_email
+        self._socket = socket.socket
 
     def get_json_response(self, url, headers=None, verify=False, type='GET'):
         if(not headers):
@@ -68,11 +70,17 @@ class TnP_Company_Notifier:
             data = response.json()
             return data, response.status_code
     
-    def find_json_object(self, data, it):
+    def find_json_object(self, data, it, ignore_attrs=[], shortlist=False):
+        if(shortlist):
+            for item in data:
+                if it['profile_code']==item['profile_code'] and 'shortlist' in it['status'] and 'shortlist' not in item['status']:
+                    return True
+                    break
+            return False
         for item in data:
             flag = True
             for attr in self.contents["companies"]:
-                if (attr not in item and attr not in it) or attr=="ppt_applied":
+                if (attr not in item and attr not in it) or attr in ignore_attrs:
                     continue
                 elif ((attr not in item) or (attr not in it)):
                     flag = False
@@ -83,20 +91,26 @@ class TnP_Company_Notifier:
             if(flag):
                 return True
         return False
-        
-    def json_diff(self, data1, data2):
+    
+    
+    def json_diff(self, new_data, old_data, shortlist):
         diff = []
-        for item in data1:
-            flag = self.find_json_object(data2, item)
+        for item in new_data:
+            if shortlist:
+                flag = self.find_json_object(old_data, item, ignore_attrs = ["ppt_applied"])
+            else:
+                flag = self.find_json_object(old_data, item, shortlist=shortlist)
             if not flag:
                 diff.append(item)
             
         return diff
         
-    def check_new_notifications(self, old_file):
+    def check_new_notifications(self, old_file, shortlist=False):
         self.headers["Authorization"] = "Bearer " + self.user.token
-        data, _ = self.get_json_response(self.companies_url, headers=self.headers)
-        # print(r)
+        if shortlist:
+            data, _ = self.get_json_response("https://tnp.iitd.ac.in/api/student/companies", headers=self.headers)
+        else:
+            data, _ = self.get_json_response(self.companies_url, headers=self.headers)
         
         try:
             fin = open(old_file, 'r')
@@ -106,18 +120,18 @@ class TnP_Company_Notifier:
             print("No history found...")
             old_data = []
         
-        diff = self.json_diff(data, old_data)
+        diff = self.json_diff(data, old_data, shortlist)
         
         if(diff == []):
             return (data, None)
-        else:
-            return (data, diff)
+        
+        return (data, diff)
         
     def get_pretty_date(self, datestr, format):
         d = datetime.strptime(datestr,format)
         return d.strftime("%a, %b %d, %I:%M %p")
     
-    def build_email_body(self, data):
+    def build_email_body(self, data, shortlist=False):
         
         body = '<center><table width="870"><tr><td><br>'
         companies = ""
@@ -138,14 +152,17 @@ class TnP_Company_Notifier:
             companies += item_body.format('<a href="https://tnp.iitd.ac.in/portal/view-jnf?code='+item['profile_code']+'">'+item['name']+'</a>')
             companies += item_body.format(item['profile'])
             companies += item_body.format(self.type_mapping.get(item['type'], "Type not registered in TnpNotifier"))
-            if('application_deadline' in item and 'ppt_date' in item):
-                companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat) + "<br>" + "PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
-            elif('application_deadline' in item):
-                companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat)+ "</font>")
-            elif('ppt_date' in item):
-                companies += item_body.format('<font color="red">'+"PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
+            if(shortlist):
+                companies += item_body.format('<font color="red">'+"Shortlist Uploaded!" + "</font>")
             else:
-                companies += item_body.format('---')
+                if('application_deadline' in item and 'ppt_date' in item):
+                    companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat) + "<br>" + "PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
+                elif('application_deadline' in item):
+                    companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat)+ "</font>")
+                elif('ppt_date' in item):
+                    companies += item_body.format('<font color="red">'+"PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
+                else:
+                    companies += item_body.format('---')
                 
             companies += '</tr>'
         
@@ -161,16 +178,13 @@ class TnP_Company_Notifier:
         str_data =  json.dumps(data, indent=4)
         open(file_name ,'w').write(str_data)
     
-    def send_email(self, to_addrs, email_body, subject, bcc=None):
+    def send_email(self, to_addrs, email_body, subject="", bcc=None):
         
         print("Sending email...")
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = self.sender_email
-        # msg['To'] = ','.join(to_addrs)
         msg['To'] = 'whomsoever-it-may-concern'
-        # if(bcc):
-            # to_addrs += bcc
 
         msg.attach(MIMEText(email_body, 'html'))
 
@@ -182,11 +196,11 @@ class TnP_Company_Notifier:
         server.ehlo()
         server.starttls()
         server.login(self.sender_email, self.sender_password)
-        if(bcc!=None and len(bcc)>0):
+        if(bcc!=None and len(bcc)>0 and '' not in bcc):
             server.sendmail(self.sender_email, bcc, msg.as_string())
 
         #send mail to owner
-        if(bcc!=None and len(bcc)>0):
+        if(bcc!=None and len(bcc)>0 and '' not in bcc):
             msg['To'] = ','.join(bcc)
         server.sendmail(self.sender_email, to_addrs, msg.as_string())
 
@@ -298,11 +312,20 @@ class TnP_Company_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email(["masterkapilkumar@gmail.com"], message, "Companies On Campus Placement Notification", bcc=self.recipient_email_list)
+            self.send_email([self.owner_email], message, "Companies On Campus Placement Notification", bcc=self.recipient_email_list)
             self.dump_json(data, self.company_history_file)
-            
         else:
             print("No new notifications")
+        
+        (data, diff) = self.check_new_notifications("shortlist-"+self.company_history_file, shortlist=True)
+        if(diff):
+            print("New shortlists uploaded")
+            message = self.build_email_body(diff, shortlist=True)
+            self.send_email([self.owner_email], message, "Shortlist Notification", bcc=self.recipient_email_list)
+            self.dump_json(data, "shortlist-"+self.company_history_file)
+        else:
+            print("No new shortlists")
+        
 
 if __name__=='__main__':
 
@@ -326,6 +349,7 @@ if __name__=='__main__':
         outgoing_port = config_data["outgoing_port"]
         sender_email = config_data["sender_email"]
         sender_password = config_data["sender_password"]
+#TODO - check whether all the email ids in the list are valid or not
         recipient_email_list = config_data["recipient_email_list"]
         recipient_email_list = list(map(lambda s: s.strip(), recipient_email_list.split(",")))
         captcha_url = "https://tnp.iitd.ac.in/api/captcha"
@@ -337,34 +361,33 @@ if __name__=='__main__':
         history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)
+        owner_name = config_data.get("owner_name", "Kapil")
+        owner_email = config_data.get("owner_email", "masterkapilkumar@gmail.com")
         check_interval = args.time
     except KeyError:
         print("Missing configuration data:\n")
         traceback.print_exc()
         sys.exit(1)
     
-    tnp_notifier = TnP_Company_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, history_file, proxy_url, proxy_port, tnp_username, tnp_password)
+    tnp_notifier = TnP_Company_Notifier(outgoing_server, outgoing_port, sender_email, sender_password, recipient_email_list, check_interval, login_url, captcha_url, companies_url, history_file, proxy_url, proxy_port, tnp_username, tnp_password, owner_name, owner_email)
     time_since_last_sent_error = 0
     while(True):
         try:
             tnp_notifier.run()
             time_since_last_sent_error = 0
-        except KeyboardInterrupt:
-            sys.exit(1)
-        except:
+        except Exception:
             #handle any exception
-            
             traceback.print_exc()
             print("\n")
-            #Send email to owner in case of any error in interval of 6 hours
-            if(time_since_last_sent_error > 21600):
+            
+            #Send email to owner in case of any error in interval of 3 hours
+            if(time_since_last_sent_error > 10800):
                 time_since_last_sent_error = 0
             if(time_since_last_sent_error == 0):
-                print("Informing Kapil...")
-                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br>"
-                error_msg += "<i>"+str(sys.exc_info())+"</i>"
-                tnp_notifier.send_email(["masterkapilkumar@gmail.com"], error_msg, "TnP Notifier is down...")
-                print("Email sent to Kapil...")
+                print("Informing %s..." %(owner_name))
+                error_msg = "<b>TnpNotifier encountered an error, please debug it ASAP:</b><br><br><i>%s</i>" %(str(sys.exc_info()))
+                tnp_notifier.send_email([owner_email], error_msg, subject="TnP Notifier is down...")
+                print("Email sent to %s..." %owner_name)
             time_since_last_sent_error += check_interval
         print("Pausing execution for %s seconds\n" %check_interval)
         time.sleep(check_interval)
