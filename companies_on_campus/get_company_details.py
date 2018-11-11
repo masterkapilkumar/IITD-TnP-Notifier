@@ -96,7 +96,7 @@ class TnP_Company_Notifier:
     def json_diff(self, new_data, old_data, shortlist):
         diff = []
         for item in new_data:
-            if shortlist:
+            if not shortlist:
                 flag = self.find_json_object(old_data, item, ignore_attrs = ["ppt_applied"])
             else:
                 flag = self.find_json_object(old_data, item, shortlist=shortlist)

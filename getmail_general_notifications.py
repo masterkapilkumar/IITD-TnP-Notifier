@@ -170,11 +170,11 @@ class TnP_Notifier:
         server.ehlo()
         server.starttls()
         server.login(self.sender_email, self.sender_password)
-        if(bcc):
+        if(bcc!=None and len(bcc)>0 and '' not in bcc):
             server.sendmail(self.sender_email, bcc, msg.as_string())
 
         #send mail to owner
-        if(bcc):
+        if(bcc!=None and len(bcc)>0 and '' not in bcc):
             msg['To'] = ','.join(bcc)
         server.sendmail(self.sender_email, to_addrs, msg.as_string())
 
@@ -211,7 +211,7 @@ if __name__=='__main__':
         fin = open(args.config_file, 'r')
         config_data = json.loads(fin.read().strip())
         fin.close()
-    except:
+    except Exception:
         print("Error reading configuration data:\n")
         traceback.print_exc()
         sys.exit(1)
@@ -221,10 +221,10 @@ if __name__=='__main__':
         outgoing_port = config_data["outgoing_port"]
         sender_email = config_data["sender_email"]
         sender_password = config_data["sender_password"]
+#TODO - check whether all the email ids in the list are valid or not
         recipient_email_list = config_data["recipient_email_list"]
         recipient_email_list = list(map(lambda s: s.strip(), recipient_email_list.split(",")))
         notifications_url = "https://tnp.iitd.ac.in/api/notify?type="+notifications_type
-        print(notifications_url)
         history_file = config_data["history_file"]
         proxy_url = config_data.get("proxy_url", None)
         proxy_port = config_data.get("proxy_port", None)
@@ -243,7 +243,6 @@ if __name__=='__main__':
             tnp_notifier.run()
             time_since_last_sent_error = 0
         except Exception:
-        
             #handle any exception
             traceback.print_exc()
             print("\n")
