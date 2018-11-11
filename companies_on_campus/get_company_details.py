@@ -73,10 +73,12 @@ class TnP_Company_Notifier:
     def find_json_object(self, data, it, ignore_attrs=[], shortlist=False):
         if(shortlist):
             for item in data:
-                if it['profile_code']==item['profile_code'] and 'shortlist' in it['status'] and 'shortlist' not in item['status']:
-                    return True
-                    break
-            return False
+                if it['profile_code']==item['profile_code']:
+                    if 'shortlist' in it['status'] and 'shortlist' not in item['status']:
+                        return False
+                    else:
+                        return True
+            return True
         for item in data:
             flag = True
             for attr in self.contents["companies"]:
