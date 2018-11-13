@@ -74,10 +74,16 @@ class TnP_Company_Notifier:
         if(shortlist):
             for item in data:
                 if it['profile_code']==item['profile_code']:
-                    if 'shortlist' in it['status'] and 'shortlist' not in item['status']:
+                    if 'status' in it and 'status' in item and 'shortlist' in it['status'].lower() and 'shortlist' not in item['status'].lower():
+                        return False
+                    elif 'shortlist_frozen' in it and 'shortlist_frozen' in item and it['shortlist_frozen'] and not item['shortlist_frozen']:
                         return False
                     else:
                         return True
+            if 'status' in it and 'shortlist' in it['status'].lower():
+                return False
+            if 'shortlist_frozen' in it and it['shortlist_frozen']:
+                return False
             return True
         for item in data:
             flag = True
@@ -155,7 +161,12 @@ class TnP_Company_Notifier:
             companies += item_body.format(item['profile'])
             companies += item_body.format(self.type_mapping.get(item['type'], "Type not registered in TnpNotifier"))
             if(shortlist):
-                companies += item_body.format('<font color="red">'+"Shortlist Uploaded!" + "</font>")
+                if(item['shortlist_frozen'] and 'status' in item and 'shortlist' in item['status'].lower()):
+                    companies += item_body.format('<font color="red">'+"Shortlist Uploaded! <br> Shortlist Frozen!"+"</font>")
+                elif(item['shortlist_frozen']):
+                    companies += item_body.format('<font color="red">'+"Shortlist Frozen!"+"</font>")
+                else:
+                    companies += item_body.format('<font color="red">'+"Shortlist Uploaded!"+"</font>")
             else:
                 if('application_deadline' in item and 'ppt_date' in item):
                     companies += item_body.format('<font color="red">'+"Apply: " + self.get_pretty_date(item['application_deadline'], dateformat) + "<br>" + "PPT: " + self.get_pretty_date(item['ppt_date'], dateformat)+ "</font>")
