@@ -1,0 +1,15 @@
+{
+	"sender_email": "abc@gmail.com",
+	"sender_password": "123",
+	"tnp_username": "2014CS50736",
+	"tnp_password": "abc",
+	"outgoing_server": "smtp.googlemail.com",
+	"outgoing_port": 587,
+	"recipient_email_list": "",
+	"captcha_url": "https://tnp.iitd.ac.in/api/captcha",
+	"login_url": "https://tnp.iitd.ac.in/api/student/login",
+	"companies_url": "https://tnp.iitd.ac.in/api/student/all-companies",
+	"history_file": "company_history.json",
+	"proxy_url": "",
+	"proxy_port": ""
+}
