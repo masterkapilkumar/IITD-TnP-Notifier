@@ -43,3 +43,4 @@ The JSON configuration file should have the following data:
     * PySocks
     * BeautifulSoup (bs4)
     * cairosvg
+	* weasyprint
