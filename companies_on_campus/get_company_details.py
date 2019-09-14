@@ -1,9 +1,13 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+
 from matplotlib import pyplot as plt
 from bs4 import BeautifulSoup
 from cairosvg import svg2png
 from datetime import datetime
+from weasyprint import HTML
 import numpy as np
 
 import traceback
@@ -16,6 +20,7 @@ import time
 import sys
 import socks
 import socket
+import os
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -56,6 +61,7 @@ class TnP_Company_Notifier:
         self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
         self.contents = {"companies": ["profile", "profile_code", "type", "name", "application_deadline", "ppt_date", "ppt_applied"]}
         self.type_mapping = {"tech": "Core (Technical)", "finance": "Finance", "research":"Teaching & Research", "other":"Other", "it": "Information Technology", "consult":"Consulting", "analytics":"Analytics"}
+        self.department_mapping = {'BB1': 'B.Tech in Biochemical Engineering & Biotechnology', 'CE1': 'B.Tech in Civil Engineering', 'CH1': 'B.Tech in Chemical Engineering', 'CS1': 'B.Tech in Computer Science & Engineering', 'EE1': 'B.Tech in Electrical Engineering', 'EE3': 'B.Tech in Electrical Engineering (Power and Automation)', 'ME1': 'B.Tech in Mechanical Engineering', 'ME2': 'B.Tech in Production & Industrial Engineering', 'MT1': 'B.Tech in Mathematics & Computing', 'PH1': 'B.Tech in Engineering Physics', 'TT1': 'B.Tech in Textile Engineering', 'BB5': 'B.Tech and M.Tech in Biochemical Engg & Biotechnology', 'CH7': 'B.Tech and M.Tech in Chemical Engineering', 'CS5': 'B.Tech and M.Tech in Computer Science & Engineering', 'MT6': 'B.Tech and M.Tech in Mathematics & Computing', 'MEB': 'B.Tech in Production & Industrial Engineering and M.Tech in Production Engineering', 'MEC': 'B.Tech in Mechanical Engineering and M.Tech in Mechanical Design', 'MEF': 'B.Tech in Mechanical Engineering and M.Tech in Applied Mechanics', 'MED': 'B.Tech in Production & Industrial Engineering and M.Tech in Mechanical Design', 'CSA': 'B.Tech in Textile Engineering and M.Tech in Computer Science & Engineering', 'CSE': 'B.Tech in Chemical Engineering and M.Tech in Computer Science & Engineering', 'CSF': 'B.Tech in Production & Industrial Engineering and M.Tech in Computer Science & Engineering', 'CEC': 'B.Tech in Civil Engineering and M.Tech in Structural Engineering', 'CED': 'B.Tech in Civil Engineering and M.Tech in Construction Engineering & Management', 'CSB': 'B.Tech in Engineering Physics and M.Tech in Computer Science & Engineering', 'MEA': 'B.Tech in Mechanical Engineering and M.Tech in Thermal Engineering', 'CSG': 'B.Tech in Mechanical Engineering and M.Tech in Computer Science & Engineering', 'CHE': 'M.Tech in Chemical Engineering', 'CYM': 'M.Tech in Molecular Engineering: Chemical Synthesis & Analysis', 'CEG': 'M.Tech in Geotechnical and Geoenvironmental Engineering', 'CEU': 'M.Tech in Rock Engineering & Underground Structures', 'CES': 'M.Tech in Structure Engineering', 'CEW': 'M.Tech in Water Resources Engineering', 'CET': 'M.Tech in Construction Engineering & Management', 'CEV': 'M.Tech in Environmental Engineering & Management', 'CEP': 'M.Tech in Transportation Engineering', 'MCS': 'M.Tech in Computer Science & Engineering', 'PHA': 'M.Tech in Applied Optics', 'PHM': 'M.Tech in Solid State Materials', 'TTF': 'M.Tech in Fibre Science & Technology', 'TTE': 'M.Tech in Textile Engineering', 'TTC': 'M.Tech in Textile Chemical Processing', 'AST': 'M.Tech in Atmospheric-Oceanic Science and Technology', 'BMT': 'M.Tech in Biomedical Engineering', 'JDS': 'Master of Design in Industrial Design', 'EEE': 'M.Tech in Communications Engineering', 'EET': 'M.Tech in Computer Technology', 'EEA': 'M.Tech in Control & Automation', 'EEN': 'M.Tech in Integrated Electronics & Circuits', 'EEP': 'M.Tech in Power Electronics, Electrical Machines & Drives', 'EES': 'M.Tech in Power Systems', 'CRF': 'M.Tech in Radio Frequency Design & Technology', 'MEM': 'M.Tech in Mechanical Design', 'MEE': 'M.Tech in Industrial Engineering', 'MEP': 'M.Tech in Production Engineering', 'MET': 'M.Tech in Thermal Engineering', 'AMA': 'M.Tech in Engineering Analysis & Design', 'JIT': 'M.Tech in Industrial Tribology & Maintenance Engineering', 'JES': 'M.Tech in Energy Studies', 'JID': 'M.Tech in Instrument Technology', 'JOP': 'M.Tech in Optoelectronics & Optical Communication', 'JPT': 'M.Tech in Polymer Science & Technology', 'JTM': 'M.Tech in Telecommunication Technology & Management', 'JVL': 'M.Tech in VLSI Design Tools & Technology', 'BEY': 'M.S.(R) in Biochemical Engineering and Biotechnology', 'CHY': 'M.S.(R) in Chemical Engineering', 'CEY': 'M.S.(R) in Civil Engineering', 'CSY': 'M.S.(R) in Computer Science & Engineering', 'BSY': 'M.S.(R) in Telecommunication Technology and Management', 'SIY': 'M.S.(R) in Information Technology', 'BLY': 'M.S.(R) in Biological Sciences', 'AMY': 'M.S.(R) in Applied Mechanics', 'MEY': 'M.S.(R) in Mechanical Engineering', 'EEY': 'M.S.(R) in Electrical Engineering', 'CYS': 'M.Sc in Chemistry', 'MAS': 'M.Sc in Mathematics', 'PHS': 'M.Sc in Physics', 'PHD': 'Doctor of Philosophy'}
         self.proxy_url = proxy_url
         self.proxy_port = proxy_port
         self.owner_name = owner_name
@@ -124,7 +130,7 @@ class TnP_Company_Notifier:
             fin = open(old_file, 'r')
             old_data = json.loads(fin.read())
             fin.close()
-        except IOError:
+        except IOError as e:
             print("No history found...")
             old_data = []
         
@@ -138,6 +144,85 @@ class TnP_Company_Notifier:
     def get_pretty_date(self, datestr, format):
         d = datetime.strptime(datestr,format)
         return d.strftime("%a, %b %d, %I:%M %p")
+    
+    def html_to_pdf(self, html):
+        html = HTML(string=html)
+        pdf = html.write_pdf()
+        return pdf
+    
+    def build_jnf_html(self, data):
+        def bool_to_str(val):
+            if(val==True):
+                return "Yes"
+            if(val==False):
+                return "No"
+            return str(val).replace("\n","<br>")
+        data = {k: bool_to_str(v) for k, v in data.items()}     #convert true/false to Yes/No 
+        data['eligible_depts'] = ', '.join(map(lambda x: self.department_mapping[x], eval(data['eligible_depts'])))
+        
+        table = '''<table style="margin:auto;width:95%%;white-space:pre-line;font-size:9pt;border-spacing:10px", class="myclass">
+            <colgroup><col style="width: 20%%;" span="1"><col style="width: 85%%;" span="1"></colgroup>
+            <tbody>
+            %s
+            </tbody>
+        </table>
+        '''
+        
+        company_overview_fields = {"Name": "name", "Website":"website", "Company Type":"company_type", "Startup":"startup", "Year of Incorporation":"incorp_year", "Description":"description"}
+        job_details_fields = {"Designation": "profile", "Type":"type", "Place of Posting":"location", "Job Details":"project_details", "Joining By":"join_by"}
+        salary_details_fields = {"CTC": "ctc", "Gross":"gross", "CTC Breakup":"ctc_breakup", "Perks / Bonus":"perks"}
+        selection_process_fields = {"Resume Shortlist": "resume", "Written Test":"written_test", "Online Test":"online_test", "Group Discussion":"group_discussion", "Medical Test":"medical_test", "Personal Interview":"interview", "No. of Rounds":"rounds", "No. of Offers":"offers", "Minimum CGPA":"min_cgpa"}
+        eligibility_fields = {"Recruiting PHDs": "phd", "Eligible Departments":"eligible_depts"}
+        company_overview=job_details=salary_details=selection_process=eligibility=""
+        
+        for field, key in company_overview_fields.items():
+            if field in ['ctc','gross']:
+                company_overview += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA") + data.get('currency',""))
+            company_overview += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA"))
+        for field, key in job_details_fields.items():
+            job_details += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA"))
+        for field, key in salary_details_fields.items():
+            salary_details += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA"))
+        for field, key in selection_process_fields.items():
+            selection_process += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA"))
+        for field, key in eligibility_fields.items():
+            eligibility += '''<tr><td style="vertical-align: top;"><b>%s:</b></td><td style="vertical-align: top;">%s</td></tr>'''%(field, data.get(key,"NA"))
+        
+        
+        table_body = '''
+            <div style="font-size:18px;margin-bottom:10px;margin-top:16px">Company Overview</div>%s
+            <div style="font-size:18px;margin-bottom:10px;margin-top:16px">Job Details</div>%s
+            <div style="font-size:18px;margin-bottom:10px;margin-top:16px">Salary Details</div>%s
+            <div style="font-size:18px;margin-bottom:10px;margin-top:16px">Selection Process</div>%s
+            <div style="font-size:18px;margin-bottom:10px;margin-top:16px">Eligibility</div>%s
+        </div>
+        '''%(table%company_overview, table%job_details, table%salary_details, table%selection_process, table%eligibility)
+        
+        html = '''<html><body>
+            <h2 style="text-align: center">Job Notification Form, IIT Delhi</h2>
+            %s
+        </body></html>'''%table_body
+        
+        return html
+        
+        # open("test.pdf", 'wb').write(pdf)
+
+    def saveJNFs(self, pdfs):
+        if not os.path.exists("./JNFs/"):
+            os.makedirs("./JNFs/")
+        for pdf in pdfs:
+            open("./JNFs/"+pdf['filename'].replace('/',''), 'wb').write(pdf['data'])
+            print("JNF "+pdf['filename']+" saved.")
+    
+    def build_attachments(self, data):
+        attachments = []
+        for item in data:
+            link = "https://tnp.iitd.ac.in/api/placement/company?code="+item['profile_code']
+            jnf, _ = self.get_json_response(link, headers=self.headers)
+            html = self.build_jnf_html(jnf)
+            pdf = self.html_to_pdf(html)
+            attachments.append({"filename":"%s (%s).pdf"%(item['name'],item['profile']),"data":pdf})
+        return attachments
     
     def build_email_body(self, data, shortlist=False):
         
@@ -191,15 +276,24 @@ class TnP_Company_Notifier:
         str_data =  json.dumps(data, indent=4)
         open(file_name ,'w').write(str_data)
     
-    def send_email(self, to_addrs, email_body, subject="", bcc=None):
+    def send_email(self, to_addrs, email_body, subject="", bcc=None, attachments=[]):
         
         print("Sending email...")
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart()
         msg['Subject'] = subject
         msg['From'] = self.sender_email
         msg['To'] = 'whomsoever-it-may-concern'
-
-        msg.attach(MIMEText(email_body, 'html'))
+        
+        body = MIMEMultipart('alternative')
+        body.attach(MIMEText(email_body, 'html'))
+        msg.attach(body)
+        
+        for attachment in attachments:
+            attachFile = MIMEBase('application', attachment['filename'].split(".")[-1])
+            attachFile.set_payload(attachment['data'])
+            encoders.encode_base64(attachFile)
+            attachFile.add_header('Content-Disposition', 'attachment', filename=attachment['filename'])
+            msg.attach(attachFile)
 
         if(self.proxy_url and self.proxy_port):
             socks.setdefaultproxy(socks.HTTP, proxy_url, proxy_port)
@@ -302,7 +396,7 @@ class TnP_Company_Notifier:
             return str(response.json())
         r = response.json()
         
-        self.user = User(r['entry_number'], r['full_name'], r['eligible'], r['blocked'], r['selected'], r['department'], r['course'], r['accepted'], r['cv_verified'], r['application_limit'], r['contact'], r['token'])
+        self.user = User(r['entry_number'], r['full_name'], r['eligible'], r['blocked'], r['selected'], r['department'], r['course'], r['accepted'], r['cv_verified'], r['application_limit'], r.get('contact'), r['token'])
         
         return False
         
@@ -325,7 +419,9 @@ class TnP_Company_Notifier:
         if(diff):
             print("New notifications")
             message = self.build_email_body(diff)
-            self.send_email([self.owner_email], message, "Companies On Campus Placement Notification", bcc=self.recipient_email_list)
+            attachments = self.build_attachments(diff)
+            self.saveJNFs(attachments)
+            self.send_email([self.owner_email], message, "Companies On Campus Placement Notification", bcc=self.recipient_email_list, attachments=attachments)
             self.dump_json(data, self.company_history_file)
         else:
             print("No new notifications")
@@ -334,7 +430,9 @@ class TnP_Company_Notifier:
         if(diff):
             print("New shortlists uploaded")
             message = self.build_email_body(diff, shortlist=True)
-            self.send_email([self.owner_email], message, "Shortlist Notification", bcc=self.recipient_email_list)
+            attachments = self.build_attachments(diff)
+            self.saveJNFs(attachments)
+            self.send_email([self.owner_email], message, "Shortlist Notification", bcc=self.recipient_email_list, attachments=attachments)
             self.dump_json(data, "shortlist-"+self.company_history_file)
         else:
             print("No new shortlists")
