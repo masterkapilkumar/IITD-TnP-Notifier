@@ -160,6 +160,7 @@ class TnP_Company_Notifier:
                 return "No"
             return str(val).replace("\n","<br>")
         data = {k: bool_to_str(v) for k, v in data.items()}     #convert true/false to Yes/No 
+
         if data.get('eligible_depts'):
             data['eligible_depts'] = ', '.join(map(lambda x: self.department_mapping[x], eval(data['eligible_depts'])))
         else:

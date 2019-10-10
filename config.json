@@ -1,0 +1,13 @@
+{
+	"sender_email": "abc@gmail.com",
+	"sender_password": "123",
+	"outgoing_server": "smtp.googlemail.com",
+	"outgoing_port": 587,
+	"recipient_email_list": "masterkapilkumar@gmail",
+	"notifications_url": "https://tnp.iitd.ac.in/api/notify?type=placement",
+	"history_file": "notifications_history.json",
+	"proxy_url": "",
+	"proxy_port": "",
+	"owner_name": "Kapil Kumar",
+	"owner_email": "masterkapilkumar@gmail.com"
+}

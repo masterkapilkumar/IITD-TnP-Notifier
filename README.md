@@ -37,9 +37,10 @@ The JSON configuration file should have the following data:
 
 ### Dependencies
 - Python 3.x
-- Python libraries
+- Python libraries (can be installed using pip)
     * requests
     * smtplib
     * PySocks
-    * BeautifulSoup
+    * BeautifulSoup (bs4)
     * cairosvg
+	* weasyprint
