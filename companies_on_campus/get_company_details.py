@@ -69,11 +69,22 @@ class TnP_Company_Notifier:
         self._socket = socket.socket
 
     def get_json_response(self, url, headers=None, verify=False, type='GET'):
+        time.sleep(1)
         if(not headers):
             headers = self.headers
         if(type=='GET'):
-            response = requests.get(url, headers=headers, verify=verify)
-            data = response.json()
+            num_tries = 2
+            data=None
+            for _ in range(num_tries):
+                response = requests.get(url, headers=headers, verify=verify)
+                try:
+                    data = response.json()
+                    return data, response.status_code
+                except json.decoder.JSONDecodeError as e:
+                    print(f"ERROR: {e}\nRetrying...")
+                    time.sleep(1)
+            if data is None:
+                raise Exception(f"Unable to fetch json response: {url}\nError: {response.content}")
             return data, response.status_code
     
     def find_json_object(self, data, it, ignore_attrs=[], shortlist=False):
@@ -218,16 +229,18 @@ class TnP_Company_Notifier:
             os.makedirs("./JNFs/")
         for pdf in pdfs:
             open("./JNFs/"+pdf['filename'].replace('/',''), 'wb').write(pdf['data'])
-            print("JNF "+pdf['filename']+" saved.")
+        print("Saved all JNFs")
     
     def build_attachments(self, data):
         attachments = []
+        print(f"Downloading {len(data)} JNFs")
         for item in data:
             link = "https://tnp.iitd.ac.in/api/placement/company?code="+item['profile_code']
             jnf, _ = self.get_json_response(link, headers=self.headers)
             html = self.build_jnf_html(jnf)
             pdf = self.html_to_pdf(html)
             attachments.append({"filename":"%s (%s).pdf"%(item['name'],item['profile']),"data":pdf})
+            print(f"Downloaded {item['name']} ({item['profile']}).pdf")
         return attachments
     
     def build_email_body(self, data, shortlist=False):
