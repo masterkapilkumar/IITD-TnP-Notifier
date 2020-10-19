@@ -44,3 +44,5 @@ The JSON configuration file should have the following data:
     * BeautifulSoup (bs4)
     * cairosvg
 	* weasyprint
+- Install dependencies for cairosvg:
+    ```sudo apt-get install libcairo2 libpango-1.0-0 libpangocairo-1.0-0```
